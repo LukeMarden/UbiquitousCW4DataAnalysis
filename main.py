@@ -31,13 +31,6 @@ def read_data(directory):
 
 def raw(directory, show=True):
     file_names, accel, gyro, barometer, pedometer, data = read_data(directory)
-
-    # df = list()
-    # df.append(pd.read_csv('data/' + test + '/' + test + '-' + 'android.sensor.accelerometer.txt', header=None))
-    # df.append(pd.read_csv('data/' + test + '/' + test + '-' + 'android.sensor.gyroscope.txt', header=None))
-    # df.append(pd.read_csv('data/' + test + '/' + test + '-' + 'android.sensor.pressure.txt', header=None))
-    # df.append(pd.read_csv('data/' + test + '/' + test + '-' + 'android.sensor.step_detector.txt', header=None))
-    # df.append(pd.read_csv('data/' + test + '/' + test + '-' + 'android.sensor.data.txt', header=None))
     accelTotalList = list()
     gyroTotalList = list()
     barList = list()
@@ -76,7 +69,6 @@ def raw(directory, show=True):
         steps = pd.DataFrame(pedometer[i].iloc[:, 1].groupby(pedometer[i].iloc[:, 0]).sum())
         steps = steps.reindex(range(steps.index.max() + 1))
         steps = (steps.fillna(0))
-        # steps = steps.reset_index()
         steps = steps.values
         stepsList.append(steps)
 
@@ -131,7 +123,6 @@ def raw(directory, show=True):
 
         plt.show()
 
-        # print(data_df.iloc[1].values[0])
 
         plt.subplot(1, 1, 1)
 
@@ -141,26 +132,16 @@ def raw(directory, show=True):
         plt.xticks(range(len(data)), file_names)
         x = range(len(data))
         y = list()
-        # plt.plot(length_multiple_128, data_df.iloc[1].values[0])
         for i in range(len(data)):
             dt_obj = datetime.strptime(data[i].iloc[1].values[0],
                                        '%M:%S:%f').time()
             seconds = dt_obj.hour*60 +dt_obj.minute*60 + dt_obj.second+(dt_obj.microsecond/1000000)
             y.append(seconds)
-            # plt.vlines(ymin=0, ymax=seconds, x=file_names[i], linewidth=2)
 
         plt.scatter(x, y)
         plt.show()
 
-    accel = list()
-    gyro = list()
-    barometer = list()
-    pedometer = list()
-    data = list()
-
-
 def features(directory, show=True):
-    tests = list()
     file_names, accel, gyro, barometer, pedometer, data = read_data(directory)
     accelMeanList = list()
     accelVarList = list()
@@ -303,11 +284,10 @@ def features(directory, show=True):
         plt.xticks(range(len(speedList)), file_names)
         x = range(len(speedList))
         y = list()
-        # plt.plot(length_multiple_128, data_df.iloc[1].values[0])
         for i in range(len(speedList)):
             speedList[i] = pd.DataFrame(speedList[i])
             y.append(speedList[i].mean())
-            # plt.vlines(ymin=0, ymax=seconds, x=file_names[i], linewidth=2)
+
         plt.scatter(x, y)
 
         plt.show()
@@ -320,7 +300,6 @@ def features(directory, show=True):
         plt.xticks(range(len(speedList)), file_names)
         x = range(len(speedList))
         y = list()
-        # plt.plot(length_multiple_128, data_df.iloc[1].values[0])
         for i in range(len(speedList)):
             speedList[i] = pd.DataFrame(speedList[i])
             y.append(pedometer[i].iloc[:,1].sum()*stride)
