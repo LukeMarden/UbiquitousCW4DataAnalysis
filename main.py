@@ -393,7 +393,6 @@ def train_model(directory):
     x_test = np.asarray(x_test).astype('float32')
     y_train = np.asarray(y_train).astype('float32')
     y_test = np.asarray(y_test).astype('float32')
-
     # print(train_dataset.describe().transpose()[['mean', 'std']])
     normalizer = preprocessing.Normalization()
     normalizer.adapt(np.array(x_train))
@@ -410,6 +409,8 @@ def train_model(directory):
         verbose=0,
         validation_data=(x_test, y_test),
     )
+    print(x_test[:1])
+    print(linear_model.predict(x_test[:1]))
     # tf.saved_model.save(linear_model, "")
     # linear_model.save("mnist.h5")
     converter = tf.compat.v2.lite.TFLiteConverter.from_keras_model(linear_model)
@@ -418,8 +419,8 @@ def train_model(directory):
 
 
 if __name__ == '__main__':
-    # raw('data/Real_Data/', False)
+    raw('data/Real_Data/', True)
     # features('data/Real_Data/', False)
-    train_model('data/Real_Data/')
+    # train_model('data/Real_Data/')
 
 
