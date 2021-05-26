@@ -5,9 +5,13 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from datetime import datetime
 import time
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.layers.experimental import preprocessing
+
 
 # file_names = list()
-
 
 
 def read_data(directory):
@@ -320,11 +324,102 @@ def features(directory, show=True):
         plt.scatter(x, y)
 
         plt.show()
+# average speed
+# gyroscopic rotation per second
+# Accelemetor per sec
+def train_model(directory):
+    file_names, accel, gyro, barometer, pedometer, data = read_data(directory)
+    accelMeanList = list()
+    gyroMeanList = list()
+    speedList = list()
+    timestampsList = list()
+    df = pd.DataFrame(columns=["speed", "accel", "gyro", "time"])
+    # df = pd.DataFrame(
+    #     {
+    #         "speed":[0],
+    #         "accel":[0],
+    #         "gyro":[0]
+    #     }
+    # )
+    for i in range(len(accel)):
+        accelMean = pd.DataFrame()
+        accelMean.insert(loc=0, column=0, value=accel[i].iloc[:, 0])
+        accelMean.insert(loc=1, column=1,
+                         value=np.sqrt(accel[i].iloc[:, 1] ** 2 + accel[i].iloc[:, 2] ** 2 + accel[i].iloc[:, 3] ** 2))
+        accelMean = (accelMean.iloc[:, 1].groupby(accelMean.iloc[:, 0]).mean())
+        accelMean = (accelMean.reindex(range(accelMean.index.max() + 1)))
+        accelMean = (accelMean.fillna(0)).values
 
 
+        gyroMean = pd.DataFrame()
+        gyroMean.insert(loc=0, column=0, value=gyro[i].iloc[:, 0])
+        gyroMean.insert(loc=1, column=1,
+                        value=np.sqrt(gyro[i].iloc[:, 1] ** 2 + gyro[i].iloc[:, 2] ** 2 + gyro[i].iloc[:, 3] ** 2))
+        gyroMean = (gyroMean.iloc[:, 1].groupby(gyroMean.iloc[:, 0]).mean())
+        gyroMean = (gyroMean.reindex(range(gyroMean.index.max() + 1)))
+        gyroMean = (gyroMean.fillna(0)).values
+
+
+        steps = pd.DataFrame(pedometer[i].iloc[:, 1].groupby(pedometer[i].iloc[:, 0]).sum())
+        steps = steps.reindex(range(steps.index.max() + 1))
+        steps = (steps.fillna(0))
+        stride = (float)(data[i].iloc[0,0])
+        speed = steps.iloc[:,0].values*stride
+        speedList.append(speed)
+        # timestamps = range(len(accelMean) + 1)
+        timestampsList.append(range(len(accelMean) + 1))
+
+
+        dfi = pd.DataFrame(
+            {
+                "speed":speed,
+                "accel":accelMean,
+                "gyro":gyroMean
+            }
+        )
+        dfi = dfi.iloc[1:]
+        dfi["time"] = len(dfi.index)
+        df = pd.concat([df, dfi])
+    df = df.sample(frac=1).reset_index(drop=True)
+
+    train_size = round((len(df)/100) * 80)
+    train_dataset = df.sample(frac=0.8, random_state=0)
+    test_dataset = df.drop(train_dataset.index)
+    x_train = train_dataset.copy()
+    x_test = test_dataset.copy()
+    y_train = x_train.pop("time")
+    y_test = x_test.pop("time")
+    x_train = np.asarray(x_train).astype('float32')
+    x_test = np.asarray(x_test).astype('float32')
+    y_train = np.asarray(y_train).astype('float32')
+    y_test = np.asarray(y_test).astype('float32')
+
+    # print(train_dataset.describe().transpose()[['mean', 'std']])
+    normalizer = preprocessing.Normalization()
+    normalizer.adapt(np.array(x_train))
+    linear_model = tf.keras.Sequential([
+        normalizer,
+        layers.Dense(units=1)
+    ])
+    linear_model.compile(
+        optimizer=tf.optimizers.Adam(learning_rate=0.1),
+        loss='mean_absolute_error')
+    linear_model.fit(
+        x_train, y_train,
+        epochs=100,
+        verbose=0,
+        validation_data=(x_test, y_test),
+    )
+    # tf.saved_model.save(linear_model, "")
+    # linear_model.save("mnist.h5")
+    converter = tf.compat.v2.lite.TFLiteConverter.from_keras_model(linear_model)
+    tflite_model = converter.convert()
+    open('linear.tflite', 'wb').write(tflite_model)
 
 
 if __name__ == '__main__':
-    raw('data/Real_Data/', True)
-    features('data/Real_Data/', True)
+    # raw('data/Real_Data/', False)
+    # features('data/Real_Data/', False)
+    train_model('data/Real_Data/')
+
 
